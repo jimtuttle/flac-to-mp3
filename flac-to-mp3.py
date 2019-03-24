@@ -1,17 +1,23 @@
 #!/usr/bin/env python3
-from optparse import OptionParser
+
+"""
+Create MP3 derivatives from FLAC files.
+Uses pydub to wrap ffmpeg.  See http://pydub.com/
+"""
+
+import argparse
 from os import walk, listdir, makedirs
 from os.path import join, splitext, isdir, exists
 from shutil import copy2
 from pydub import AudioSegment
-from subprocess import run
 import errno
 
 
-def makedir(d):
+def create_directory(d):
     """Create directories in destination if they don't already exist"""
+    print("Creating directory {}".format(d))
     try:
-        makedirs(d)
+        makedirs(d, exist_ok=True)
     except FileExistsError as exc:
         if exc.errno == errno.EEXIST and isdir(d):
             pass
@@ -19,10 +25,10 @@ def makedir(d):
             raise
 
 
-def convert(r, f, d, p, fn):
+def convert(r, f, p, fn):
     """Convert flac to mp3 using ffmpeg if the derivative doesn't already exist"""
     sourcefile = join(r, f)
-    destfile = join(d, fn + '.mp3')
+    destfile = join(p, fn + '.mp3')
     if not exists(destfile):
         flac_audio = AudioSegment.from_file(sourcefile, "flac")
         flac_audio.export(destfile, format="mp3")
@@ -31,22 +37,21 @@ def convert(r, f, d, p, fn):
         print("Already exists ".format(destfile))
 
 
-parser = OptionParser()
-parser.add_option("-s", "--source", dest="source",
-                  help="path to directory containing FLAC files", metavar="FILE")
-parser.add_option("-d", "--destination", dest="destination",
-                  help="path to directory containing FLAC files", metavar="FILE")
-(options, args) = parser.parse_args()
-
-
-for root, dirs, files in walk(source):
-    for file in files:
-        path = root.replace(source, '')  # file path minus source path
-        destdir = join(destination, path)  # path to new derivative directory
-        makedir(destdir)
-        fname, extension = splitext(file)
-        if extension == '.jpg' or extension == '.mp3':
-            if not exists(join(destdir, file)):
-                copy2(join(root, file), join(destdir, file))
-        elif extension == '.flac':
-            convert(root, file, destdir, path, fname)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Create MP3s from FLAC files")
+    parser.add_argument("-s", '--source', help="Path to flac directory", required=True)
+    parser.add_argument("-d", '--destination', help="Path to MP3 directory", required=True)
+    args = vars(parser.parse_args())
+    source = args["source"]
+    destination = args["destination"]
+    for root, dirs, files in walk(source, topdown=True):
+        for directory in dirs:
+            path = join(root, directory).replace(source, destination)
+            create_directory(path)
+        for file in files:
+            fname, extension = splitext(file)
+            if extension == '.jpg' or extension == '.mp3':
+                if not exists(join(path, file)):
+                    copy2(join(root, file), join(path, file))
+            elif extension == '.flac':
+                convert(root, file, path, fname)
