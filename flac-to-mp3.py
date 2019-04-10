@@ -6,8 +6,8 @@ Uses pydub to wrap ffmpeg.  See http://pydub.com/
 """
 
 import argparse
-from os import walk, listdir, makedirs
-from os.path import join, splitext, isdir, exists
+from os import walk, makedirs
+from os.path import join, splitext, isdir, isfile, exists
 from shutil import copy2
 from pydub import AudioSegment
 import errno
@@ -15,11 +15,11 @@ import errno
 
 def create_directory(d):
     """Create directories in destination if they don't already exist"""
-    print("Creating directory {}".format(d))
     try:
         makedirs(d, exist_ok=True)
     except FileExistsError as exc:
         if exc.errno == errno.EEXIST and isdir(d):
+            print("Already exists: {}".format(d))
             pass
         else:
             raise
@@ -28,13 +28,13 @@ def create_directory(d):
 def convert(r, f, p, fn):
     """Convert flac to mp3 using ffmpeg if the derivative doesn't already exist"""
     sourcefile = join(r, f)
-    destfile = join(p, fn + '.mp3')
-    if not exists(destfile):
+    destfile = p.replace(".flac", ".mp3")
+    if not isfile(destfile):
         flac_audio = AudioSegment.from_file(sourcefile, "flac")
         flac_audio.export(destfile, format="mp3")
         print("Converting {}".format(destfile))
     else:
-        print("Already exists ".format(destfile))
+        print("Already exists {}".format(destfile))
 
 
 if __name__ == "__main__":
@@ -49,9 +49,12 @@ if __name__ == "__main__":
             path = join(root, directory).replace(source, destination)
             create_directory(path)
         for file in files:
+            newname = file.strip()
+            path = join(root, newname).replace(source, destination)
             fname, extension = splitext(file)
             if extension == '.jpg' or extension == '.mp3':
-                if not exists(join(path, file)):
-                    copy2(join(root, file), join(path, file))
+                dest = join(root, file).replace(source, destination)
+                if not exists(dest):
+                    copy2(join(root, file), dest)
             elif extension == '.flac':
                 convert(root, file, path, fname)
