@@ -17,6 +17,8 @@ git clone https://github.com/jimtuttle/flac-to-mp3.git
 
 ### Usage
 
+Call with source and destintation directories.
+`./flac-to-mp3.py -s /path/to/source -d /path/to/destination`
 
 ## Contributing
 
@@ -25,4 +27,8 @@ Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c6
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
+
+## Thanks
+
+Thanks to [AudioSegement](https://github.com/MaxStrange/AudioSegment).
 
